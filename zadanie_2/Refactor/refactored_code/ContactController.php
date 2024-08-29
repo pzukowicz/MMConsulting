@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 require_once 'Request.php';
 
+use Psr\Http\Message\ResponseInterface;
+
 /**
  * Controller for handling contract data.
  */
@@ -37,15 +39,18 @@ class ContractController {
    */
   private Request $request;
 
+  private ResponseInterface $response;
+
   /**
    * An instance of Request to manage and sanitize superglobal data.
    *
    * @param PDO $db
    *   Database connection instance.
    */
-  public function __construct(PDO $db) {
+  public function __construct(PDO $db, ResponseInterface $response) {
     $this->db = $db;
     $this->request = new Request();
+    $this->response = $response;
   }
 
   /**
@@ -100,23 +105,30 @@ class ContractController {
   }
 
   /**
-   * Render HTML for displaying contracts.
+   * Renders contracts as HTML.
    *
-   * @param array $contracts
+   * @param array $contracts 
    *   Array of contract data to be displayed.
-   *
-   * @return void
+   * 
+   * @return ResponseInterface
+   *   Response with rendered HTML.
    */
-  private function renderContracts(array $contracts): void {
-    echo "<html><body bgcolor='" . self::BGCOLOR . "'><br><table width='95%'>";
+  private function renderContracts(array $contracts): ResponseInterface {
+    $html = "<html><body bgcolor='" . self::BGCOLOR . "'><br><table width='95%'>";
     foreach ($contracts as $contract) {
-      echo "<tr><td>{$contract['id']}</td><td>{$contract['nazwa_przedsiebiorcy']} ";
-      if ($contract['kwota'] > 5) {
-        echo "{$contract['kwota']}";
-      }
-      echo "</td></tr>";
+        $id = htmlspecialchars($contract['id']);
+        $businessName = htmlspecialchars($contract['nazwa_przedsiebiorcy']);
+        $amount = htmlspecialchars($contract['kwota']);
+        $html .= "<tr><td>{$id}</td><td>{$businessName} ";
+        if ($contract['kwota'] > 5) {
+            $html .= "{$amount}";
+        }
+        $html .= "</td></tr>";
     }
-    echo "</table></body></html>";
-  }
+    $html .= "</table></body></html>";
+
+    $this->response->getBody()->write($html);
+    return $this->response;
+}
   
 }
